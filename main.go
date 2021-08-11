@@ -16,6 +16,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	app := fiber.New()
+	app.Static("/", "./wwwroot")
 
 	app.Static("/uploads", "./uploads")
 
@@ -27,9 +28,9 @@ func main() {
 		os.MkdirAll(path, 0755)
 	}
 	
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World 👋!")
-	})
+	// app.Get("/", func(c *fiber.Ctx) error {
+	// 	return c.SendString("Hello, World 👋!")
+	// })
 
 	routes.Serve(app)
 	log.Fatal(app.Listen(":" + os.Getenv("PORT")))

@@ -84,7 +84,10 @@ func (tx *productController) FindProduct(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(err.Error())
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"product": product})
+	serializedProduct := productRespons{}
+	copier.Copy(&serializedProduct, &product)
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"product": serializedProduct})
 }
 
 func (tx *productController) FindProducts(c *fiber.Ctx) error {
@@ -182,8 +185,14 @@ func (tx *productController) UpdataProduct(c *fiber.Ctx) error {
 
 	// copier.Copy(&product, &form)
 
+	// x := primitive.E{"$set", form}
+
 	update := bson.D{
 		{"$set", form},
+	}
+
+	if err := tx.removeImageProduct(filter); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
 	}
 
 	if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
