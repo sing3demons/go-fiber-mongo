@@ -22,6 +22,13 @@ type createProduct struct {
 	Image string `form:"image" bson:"image"`
 }
 
+type updateProduct struct {
+	Name  string `form:"name" bson:"name"`
+	Desc  string `form:"desc" bson:"desc"`
+	Price int    `form:"price" bson:"price"`
+	Image string `form:"image" bson:"image"`
+}
+
 type productRespons struct {
 	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name  string             `json:"name"`
@@ -35,8 +42,11 @@ type productController struct {
 }
 
 type ProductController interface {
+	FindProducts(c *fiber.Ctx) error
 	FindProduct(c *fiber.Ctx) error
 	CreateProduct(c *fiber.Ctx) error
+	UpdataProduct(c *fiber.Ctx) error
+	DeleteProduct(c *fiber.Ctx) error
 }
 
 func NewItemController(db *mongo.Database) ProductController {
@@ -47,7 +57,84 @@ func (tx *productController) collection() *mongo.Collection {
 	return tx.db.Collection(("products"))
 }
 
+func (tx *productController) UpdataProduct(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var form updateProduct
+	if err := c.BodyParser(&form); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	filter, err := tx.findProductByID(c)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).JSON(err)
+	}
+
+	var product models.Product
+	copier.Copy(&product, &form)
+
+	image, err := tx.setProductImage(c, &product)
+	if err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
+	}
+
+	product.Image = image
+
+	update := bson.D{
+		{"$set", product},
+	}
+
+	if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
+		return c.JSON(err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (tx *productController) DeleteProduct(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter, err := tx.findProductByID(c)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).JSON(err)
+	}
+
+	if err := tx.collection().FindOneAndDelete(ctx, filter).Err(); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (tx *productController) findProductByID(c *fiber.Ctx) (primitive.M, error) {
+	id := c.Params("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": objectID}
+
+	return filter, nil
+}
+
 func (tx *productController) FindProduct(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	filter, err := tx.findProductByID(c)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).JSON(err)
+	}
+	var product models.Product
+
+	if err := tx.collection().FindOne(ctx, filter).Decode(&product); err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(err.Error())
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"product": product})
+}
+
+func (tx *productController) FindProducts(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
