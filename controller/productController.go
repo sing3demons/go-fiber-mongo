@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -16,10 +18,10 @@ import (
 )
 
 type createProduct struct {
-	Name  string `form:"name" bson:"name"`
-	Desc  string `form:"desc" bson:"desc"`
-	Price int    `form:"price" bson:"price"`
-	Image string `form:"image" bson:"image"`
+	Name  string `form:"name" bson:"name" validate:"required"`
+	Desc  string `form:"desc" bson:"desc" validate:"required"`
+	Price int    `form:"price" bson:"price" validate:"required"`
+	Image string `form:"image" bson:"image" validate:"required"`
 }
 
 type updateProduct struct {
@@ -55,55 +57,6 @@ func NewItemController(db *mongo.Database) ProductController {
 
 func (tx *productController) collection() *mongo.Collection {
 	return tx.db.Collection(("products"))
-}
-
-func (tx *productController) UpdataProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var form updateProduct
-	if err := c.BodyParser(&form); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": err.Error()})
-	}
-
-	filter, err := tx.findProductByID(c)
-	if err != nil {
-		c.Status(fiber.StatusNotFound).JSON(err)
-	}
-
-	var product models.Product
-	copier.Copy(&product, &form)
-
-	image, err := tx.setProductImage(c, &product)
-	if err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
-	}
-
-	product.Image = image
-
-	update := bson.D{
-		{"$set", product},
-	}
-
-	if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
-		return c.JSON(err.Error())
-	}
-	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func (tx *productController) DeleteProduct(c *fiber.Ctx) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter, err := tx.findProductByID(c)
-	if err != nil {
-		c.Status(fiber.StatusNotFound).JSON(err)
-	}
-
-	if err := tx.collection().FindOneAndDelete(ctx, filter).Err(); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
-	}
-	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (tx *productController) findProductByID(c *fiber.Ctx) (primitive.M, error) {
@@ -187,10 +140,82 @@ func (tx *productController) CreateProduct(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"product": serializedProduct})
 }
 
-func (tx *productController) setProductImage(c *fiber.Ctx, product *models.Product) (string, error) {
+func (tx *productController) UpdataProduct(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
+	var form updateProduct
+	if err := c.BodyParser(&form); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	filter, err := tx.findProductByID(c)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).JSON(err)
+	}
+
+	var product models.Product
+
+	if err := tx.collection().FindOne(ctx, filter).Decode(&product); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
+	}
+
+	//validate
+	if form.Name == "" {
+		form.Name = product.Name
+	}
+
+	if form.Desc == "" {
+		form.Desc = product.Desc
+	}
+
+	if form.Price == 0 {
+		form.Price = product.Price
+	}
+
+	image, _ := tx.setProductImage(c, &product)
+	form.Image = image
+
+	if form.Image == "" {
+		form.Image = product.Image
+	}
+
+	// copier.Copy(&product, &form)
+
+	update := bson.D{
+		{"$set", form},
+	}
+
+	if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
+		return c.JSON(err.Error())
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (tx *productController) DeleteProduct(c *fiber.Ctx) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter, err := tx.findProductByID(c)
+	if err != nil {
+		c.Status(fiber.StatusNotFound).JSON(err)
+	}
+
+	if err := tx.removeImageProduct(filter); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
+	}
+
+	if err := tx.collection().FindOneAndDelete(ctx, filter).Err(); err != nil {
+		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (tx *productController) setProductImage(c *fiber.Ctx, product *models.Product) (string, error) {
 	file, err := c.FormFile("image")
 	if err != nil || file == nil {
+		log.Println(err)
 		return "", err
 	}
 
@@ -208,4 +233,25 @@ func (tx *productController) setProductImage(c *fiber.Ctx, product *models.Produ
 	}
 
 	return image, nil
+}
+
+func (tx *productController) removeImageProduct(filter primitive.M) error {
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var product models.Product
+
+	if err := tx.collection().FindOne(ctx, filter).Decode(&product); err != nil {
+		return err
+	}
+
+	if product.Image != "" {
+		image := product.Image
+		fmt.Println(image)
+		pwd, _ := os.Getwd()
+		fmt.Println(pwd)
+		os.Remove(pwd + "/" + image)
+	}
+	return nil
 }

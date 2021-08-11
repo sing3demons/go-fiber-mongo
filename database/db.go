@@ -31,5 +31,6 @@ func InitDB() *mongo.Database {
 	fmt.Println("Connected to MongoDB!")
 
 	db := client.Database("go-product")
+
 	return db
 }
