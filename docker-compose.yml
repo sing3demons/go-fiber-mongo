@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  db:
+    image: mongo
+    container_name: mongo
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MDB_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MDB_PASSWORD}
+    ports:
+      - ${MDB_PORT}:${MDB_PORT}
+    volumes:
+      - ./_mdb_data:/data/db
+  webapi:
+    build: .
+    container_name: webapi
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ".:/app"
+    restart: always
+    depends_on:
+      - db
+    links:
+      - "db:db"
