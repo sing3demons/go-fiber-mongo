@@ -1,16 +1,19 @@
 FROM golang:alpine
 
-RUN mkdir /app
+# RUN mkdir /app
 
 WORKDIR /app
-
-ADD go.mod .
-ADD go.sum .
-
+COPY . .
 RUN go mod download
-ADD . .
-
 RUN go get github.com/githubnemo/CompileDaemon
+
+# ADD go.mod .
+# ADD go.sum .
+
+# RUN go mod download
+# ADD . .
+
+# RUN go get github.com/githubnemo/CompileDaemon
 
 EXPOSE ${PORT}
 
