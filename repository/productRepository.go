@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
+	"github.com/sing3demons/go-fiber-mongo/database"
 	"github.com/sing3demons/go-fiber-mongo/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,19 +22,31 @@ type ProductRepository interface {
 }
 
 type productRepository struct {
-	DB *mongo.Database
+	DB    *mongo.Database
+	Cache database.RedisCache
 }
 
 func (tx *productRepository) collection() *mongo.Collection {
 	return tx.DB.Collection("products")
 }
 
-func NewProductRepository(db *mongo.Database) ProductRepository {
-	return &productRepository{DB: db}
+func NewProductRepository(db *mongo.Database, cache database.RedisCache) ProductRepository {
+	return &productRepository{DB: db, Cache: cache}
 }
 
 func (tx *productRepository) FindAll() ([]models.Product, error) {
-	var products []models.Product
+	cache, _ := tx.Cache.GetProducts("products")
+	var products []models.Product = cache
+
+	if products != nil {
+		fmt.Println("Get...Redis")
+		products, err := tx.Cache.GetProducts("products")
+		if err != nil {
+			log.Printf("get product :%v\n", err)
+		}
+
+		return products, nil
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -46,6 +61,8 @@ func (tx *productRepository) FindAll() ([]models.Product, error) {
 	if err := cursor.All(ctx, &products); err != nil {
 		return nil, err
 	}
+
+	tx.Cache.Set("products", products)
 
 	return products, nil
 }

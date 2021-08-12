@@ -10,10 +10,11 @@ import (
 
 func Serve(app *fiber.App) {
 	db := database.InitDB()
+	cache := database.NewRedisCache("redis:6379", 1, 10)
 	v1 := app.Group("api/v1")
 
 	productGroup := v1.Group("/products")
-	productRepository := repository.NewProductRepository(db)
+	productRepository := repository.NewProductRepository(db, cache)
 	productSevice := service.NewProductService(productRepository)
 	productController := controller.NewItemController(productSevice)
 	{

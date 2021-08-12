@@ -11,6 +11,14 @@ services:
       - ${MDB_PORT}:${MDB_PORT}
     volumes:
       - ./_mdb_data:/data/db
+  redis:
+    container_name: redis
+    image: redis:alpine
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${RDB_PASSWORD}
+    ports:
+      - 6379:6379
+    volumes:
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf
   webapi:
     build: .
     container_name: webapi
@@ -21,5 +29,6 @@ services:
     restart: always
     depends_on:
       - db
+      - redis
     links:
       - "db:db"

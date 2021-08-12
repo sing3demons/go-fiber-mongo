@@ -6,6 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.0.3 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/go-redis/redis/v8 v8.11.2 // indirect
 	github.com/gofiber/fiber/v2 v2.16.0
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/copier v0.3.2
