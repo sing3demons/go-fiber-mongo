@@ -16,25 +16,28 @@ import (
 )
 
 type createProduct struct {
-	Name  string `form:"name" bson:"name" validate:"required"`
-	Desc  string `form:"desc" bson:"desc" validate:"required"`
-	Price int    `form:"price" bson:"price" validate:"required"`
-	Image string `form:"image" bson:"image" validate:"required"`
+	Name       string `form:"name" bson:"name" validate:"required"`
+	Desc       string `form:"desc" bson:"desc" validate:"required"`
+	Price      int    `form:"price" bson:"price" validate:"required"`
+	Image      string `form:"image" bson:"image" validate:"required"`
+	CategoryID string `form:"categoryId" bson:"categoryId,omitempty"`
 }
 
 type updateProduct struct {
-	Name  string `form:"name" bson:"name"`
-	Desc  string `form:"desc" bson:"desc"`
-	Price int    `form:"price" bson:"price"`
-	Image string `form:"image" bson:"image"`
+	Name       string `form:"name" bson:"name"`
+	Desc       string `form:"desc" bson:"desc"`
+	Price      int    `form:"price" bson:"price"`
+	Image      string `form:"image" bson:"image"`
+	CategoryID string `form:"categoryId,omitempty" bson:"categoryId,omitempty"`
 }
 
 type productRespons struct {
-	ID    primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name  string             `json:"name"`
-	Desc  string             `json:"desc"`
-	Price int                `json:"price"`
-	Image string             `json:"image"`
+	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name       string             `json:"name"`
+	Desc       string             `json:"desc"`
+	Price      int                `json:"price"`
+	Image      string             `json:"image"`
+	CategoryID primitive.ObjectID `json:"categoryId" bson:"categoryId,omitempty"`
 }
 
 type productController struct {
@@ -107,6 +110,7 @@ func (tx *productController) CreateProduct(c *fiber.Ctx) error {
 	var product models.Product
 
 	copier.Copy(&product, &form)
+	product.CategoryID, _ = primitive.ObjectIDFromHex(form.CategoryID)
 
 	image, err := tx.setProductImage(c, &product)
 	if err != nil {
@@ -163,9 +167,16 @@ func (tx *productController) UpdateProduct(c *fiber.Ctx) error {
 		form.Image = product.Image
 	}
 
-	update := bson.D{
+	copier.Copy(&product, &form)
+	product.CategoryID, _ = primitive.ObjectIDFromHex(form.CategoryID)
+
+	// update := bson.D{
+	// 	{"$set", form},
+	// }
+
+	update := []interface{}{bson.D{
 		{"$set", form},
-	}
+	}}
 
 	if err := tx.removeImageProduct(filter); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())

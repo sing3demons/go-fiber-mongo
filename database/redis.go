@@ -63,7 +63,7 @@ func (cache *redisCache) GetProducts(key string) ([]models.Product, error) {
 		return nil, err
 	}
 
-	product := []models.Product{}
+	var product []models.Product
 	if err := json.Unmarshal([]byte(val), &product); err != nil {
 		panic(err)
 	}

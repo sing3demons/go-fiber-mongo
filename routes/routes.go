@@ -24,4 +24,13 @@ func Serve(app *fiber.App) {
 		productGroup.Put("/:id", productController.UpdateProduct)
 		productGroup.Post("", productController.CreateProduct)
 	}
+
+	categoryGroup := v1.Group("/categories")
+	categoryRepository := repository.NewCategoryRepository(db)
+	categoryService := service.NewCategoryService(categoryRepository)
+	categoryController := controller.NewCategoryController(categoryService)
+	{
+		categoryGroup.Get("", categoryController.FindCategories)
+		categoryGroup.Post("", categoryController.CreateCategory)
+	}
 }

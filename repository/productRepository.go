@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/sing3demons/go-fiber-mongo/database"
@@ -17,7 +16,7 @@ type ProductRepository interface {
 	FindAll() ([]models.Product, error)
 	FindOne(filter primitive.M) (*models.Product, error)
 	Create(product models.Product) (*models.Product, error)
-	Update(filter primitive.M, update primitive.D) error
+	Update(filter primitive.M, docs []interface{}) error
 	Delete(filter primitive.M) error
 }
 
@@ -35,19 +34,15 @@ func NewProductRepository(db *mongo.Database, cache database.RedisCache) Product
 }
 
 func (tx *productRepository) FindAll() ([]models.Product, error) {
-	cache, _ := tx.Cache.GetProducts("products")
-	var products []models.Product = cache
 
-	if products != nil {
+	cacheProducts, _ := tx.Cache.GetProducts("products")
+
+	if cacheProducts != nil {
 		fmt.Println("Get...Redis")
-		products, err := tx.Cache.GetProducts("products")
-		if err != nil {
-			log.Printf("get product :%v\n", err)
-		}
-
-		return products, nil
+		return cacheProducts, nil
 	}
 
+	var products []models.Product
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -92,13 +87,19 @@ func (tx *productRepository) Create(product models.Product) (*models.Product, er
 	return &product, nil
 }
 
-func (tx *productRepository) Update(filter primitive.M, update primitive.D) error {
+func (tx *productRepository) Update(filter primitive.M, docs []interface{}) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
+	_, err := tx.collection().UpdateMany(ctx, filter, docs)
+	if err != nil {
 		return err
 	}
+
+	// if err := tx.collection().FindOneAndUpdate(ctx, filter, update).Err(); err != nil {
+	// 	return err
+	// }
+
 	return nil
 }
 

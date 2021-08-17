@@ -12,7 +12,7 @@ type ProductService interface {
 	FindAll() ([]models.Product, error)
 	FindOne(filter primitive.M) (*models.Product, error)
 	Create(product models.Product) (*models.Product, error)
-	Update(filter primitive.M, update primitive.D) error
+	Update(filter primitive.M, update []interface{}) error
 	Delete(filter primitive.M) error
 }
 
@@ -51,7 +51,7 @@ func (service *productService) Create(product models.Product) (*models.Product, 
 	return result, nil
 }
 
-func (service *productService) Update(filter primitive.M, update primitive.D) error {
+func (service *productService) Update(filter primitive.M, update []interface{}) error {
 	err := service.Repository.Update(filter, update)
 	if err != nil {
 		log.Printf("error :%v", err.Error())
