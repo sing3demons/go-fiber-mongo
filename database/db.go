@@ -15,7 +15,8 @@ func InitDB() *mongo.Database {
 	port := os.Getenv("MDB_PORT")
 	username := os.Getenv("MDB_USERNAME")
 	password := os.Getenv("MDB_PASSWORD")
-	uri := fmt.Sprintf("mongodb://%s:%s@db:%s", username, password, port)
+	host := os.Getenv("MDB_HOST")
+	uri := fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

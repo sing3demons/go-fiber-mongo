@@ -42,10 +42,27 @@ func (tx *productRepository) FindAll() ([]models.Product, error) {
 		return cacheProducts, nil
 	}
 
-	var products []models.Product
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// conditions := make([]bson.M, 0)
+	// var conditions []bson.M
+
+	// id, _ := primitive.ObjectIDFromHex("61a30848e3201fba74a4a8bb")
+	// conditions = append(conditions, bson.M{"$match": bson.M{"_id": id}})
+	// conditions = append(conditions, bson.M{
+	// 	"$lookup": bson.M{
+	// 		"from":         "categories",
+	// 		"localField":   "categoryId",
+	// 		"foreignField": "_id",
+	// 		"as":           "category",
+	// 	},
+	// })
+
+	// var productBsonM []bson.M
+	var products []models.Product
+
+	// cursor, err := tx.collection().Aggregate(ctx, conditions)
 	cursor, err := tx.collection().Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -56,6 +73,24 @@ func (tx *productRepository) FindAll() ([]models.Product, error) {
 	if err := cursor.All(ctx, &products); err != nil {
 		return nil, err
 	}
+
+	// bsonBytes, err := json.Marshal(productBsonM)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// json.Unmarshal(bsonBytes, &products)
+	// if i,v := productBsonM[]{
+
+	// }
+	// fmt.Println(productBsonM[0]["_id"])
+	// fmt.Println("")
+	// fmt.Sprintln(productBsonM)
+	// fmt.Println("p ", products[0])
+
+	// for _, v := range productBsonM {
+	// 	fmt.Printf(" v: %v\n", v)
+
+	// }
 
 	tx.Cache.Set("products", products)
 

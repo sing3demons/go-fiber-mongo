@@ -38,6 +38,10 @@ type productRespons struct {
 	Price      int                `json:"price"`
 	Image      string             `json:"image"`
 	CategoryID primitive.ObjectID `json:"categoryId" bson:"categoryId,omitempty"`
+	Category   struct {
+		ID   primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+		Name string             `json:"name"`
+	} `json:"category"`
 }
 
 type productController struct {
@@ -114,6 +118,7 @@ func (tx *productController) CreateProduct(c *fiber.Ctx) error {
 
 	image, err := tx.setProductImage(c, &product)
 	if err != nil {
+
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(err.Error())
 	}
 

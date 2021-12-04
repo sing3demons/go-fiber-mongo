@@ -1,20 +1,27 @@
-FROM golang:alpine
-
-# RUN mkdir /app
+FROM golang:1.17-buster AS build
 
 WORKDIR /app
-COPY . .
+
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod download
-RUN go get github.com/githubnemo/CompileDaemon
 
-# ADD go.mod .
-# ADD go.sum .
+COPY . ./
 
-# RUN go mod download
-# ADD . .
+ENV GOARCH=amd64
 
-# RUN go get github.com/githubnemo/CompileDaemon
+RUN go build \
+    -ldflags "-X main.buildcommit=`git rev-parse --short HEAD` \
+    -X main.buildtime=`date "+%Y-%m-%dT%H:%M:%S%Z:00"`" \
+    -o /go/bin/app
 
-EXPOSE ${PORT}
+## Deploy
+FROM gcr.io/distroless/base-debian11
 
-ENTRYPOINT CompileDaemon --build="go build -o main_app" --command=./main_app
+COPY --from=build /go/bin/app /app
+
+EXPOSE 8080
+
+USER nonroot:nonroot
+
+CMD ["/app"]
