@@ -180,7 +180,7 @@ func (tx *productController) UpdateProduct(c *fiber.Ctx) error {
 	// }
 
 	update := []interface{}{bson.D{
-		{"$set", form},
+		{Key: "$set", Value: form},
 	}}
 
 	if err := tx.removeImageProduct(filter); err != nil {
@@ -220,7 +220,7 @@ func (tx *productController) setProductImage(c *fiber.Ctx, product *models.Produ
 
 	// generate new uuid for image name
 	uniqueId := uuid.New()
-	filename := "uploads/products" + "/" + "images" + "/" + strings.Replace(uniqueId.String(), "-", "", -1)
+	filename := "/uploads/products" + "/" + "images" + "/" + strings.Replace(uniqueId.String(), "-", "", -1)
 	// extract image extension from original file filename
 	fileExt := strings.Split(file.Filename, ".")[1]
 	// generate image from filename and extension
