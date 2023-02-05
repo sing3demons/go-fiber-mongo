@@ -9,13 +9,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type categoryResponse struct {
-	Name    string `json:"name" bson:"_id,omitempty"`
-	Product []struct {
-		ID   primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-		Name string             `json:"name" bson:"name,omitempty"`
-	} `json:"products"`
-}
+// type categoryResponse struct {
+// 	Name    string `json:"name" bson:"_id,omitempty"`
+// 	Product []struct {
+// 		ID   primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
+// 		Name string             `json:"name" bson:"name,omitempty"`
+// 	} `json:"products"`
+// }
 
 type allCategoryResponse struct {
 	ID   primitive.ObjectID `json:"_id" bson:"_id,omitempty"`

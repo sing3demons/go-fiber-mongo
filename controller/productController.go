@@ -31,7 +31,7 @@ type updateProduct struct {
 	CategoryID string `form:"categoryId,omitempty" bson:"categoryId,omitempty"`
 }
 
-type productRespons struct {
+type productResponse struct {
 	ID         primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Name       string             `json:"name"`
 	Desc       string             `json:"desc"`
@@ -85,7 +85,7 @@ func (tx *productController) FindProduct(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "recods not found"})
 	}
 
-	serializedProduct := productRespons{}
+	serializedProduct := productResponse{}
 	copier.Copy(&serializedProduct, &product)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"product": serializedProduct})
@@ -98,7 +98,7 @@ func (tx *productController) FindProducts(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": "Something went wrong"})
 	}
 
-	serializedProduct := []productRespons{}
+	serializedProduct := []productResponse{}
 	copier.Copy(&serializedProduct, &products)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"products": serializedProduct})
@@ -130,7 +130,7 @@ func (tx *productController) CreateProduct(c *fiber.Ctx) error {
 	}
 
 	// fmt.Println(result.InsertedID)
-	serializedProduct := productRespons{}
+	serializedProduct := productResponse{}
 	copier.Copy(&serializedProduct, &result)
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"product": serializedProduct})
